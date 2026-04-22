@@ -350,6 +350,35 @@ func Generate(spec *openapi3.T, opts Configuration) (string, error) {
 				return "", fmt.Errorf("error generation response definitions for schema: %w", err)
 			}
 		}
+
+		// When CollapseComponentResponses is enabled, build a reverse mapping
+		// from each component response to the operations that reference it via
+		// $ref. Only fixed-status-code, non-external $refs are collapsed.
+		if opts.OutputOptions.CollapseComponentResponses {
+			refTypeToIdx := make(map[string]int, len(responses))
+			for i := range responses {
+				refTypeToIdx[responses[i].GoName()] = i
+			}
+			for _, op := range ops {
+				if op.IsAlias {
+					continue
+				}
+				for _, rd := range op.Responses {
+					if rd.IsRef() && !rd.IsExternalRef() && rd.HasFixedStatusCode() {
+						if idx, ok := refTypeToIdx[rd.Ref]; ok {
+							responses[idx].CollapseVisitors = append(
+								responses[idx].CollapseVisitors,
+								CollapseVisitorOp{
+									OperationId: op.OperationId,
+									StatusCode:  rd.StatusCode,
+								},
+							)
+						}
+					}
+				}
+			}
+		}
+
 		strictServerResponses, err := GenerateStrictResponses(t, responses)
 		if err != nil {
 			return "", fmt.Errorf("error generation response definitions for schema: %w", err)

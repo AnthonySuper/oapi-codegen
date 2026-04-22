@@ -28,6 +28,7 @@
         {{$isExternalRef := .IsExternalRef -}}
         {{$ref := .Ref  | ucFirstWithPkgName -}}
         {{$headers := .Headers -}}
+        {{$collapse := and $isRef (not $isExternalRef) $fixedStatusCode (collapseComponentResponses) -}}
 
         {{if (and $hasHeaders (not $isRef)) -}}
             type {{$opid}}{{$statusCode}}ResponseHeaders struct {
@@ -39,6 +40,7 @@
 
         {{range .Contents}}
             {{$receiverTypeName := printf "%s%s%s%s" $opid $statusCode .NameTagOrContentType "Response"}}
+            {{if not $collapse -}}
             {{if eq .NameTag "Text" -}}
                 type {{$receiverTypeName}} string
             {{else if and $fixedStatusCode $isRef -}}
@@ -71,8 +73,9 @@
                     {{end -}}
                 }
             {{end}}
+            {{end}}
 
-            func (response {{$receiverTypeName}}) Visit{{$opid}}Response(ctx iris.Context) error {
+            func (response {{if $collapse}}{{$ref}}{{.NameTagOrContentType}}Response{{else}}{{$receiverTypeName}}{{end}}) Visit{{$opid}}Response(ctx iris.Context) error {
                 {{range $headers -}}
                     ctx.ResponseWriter().Header().Set("{{.Name}}", fmt.Sprint(response.Headers.{{.GoName}}))
                 {{end -}}
@@ -142,6 +145,7 @@
         {{end}}
 
         {{if eq 0 (len .Contents) -}}
+            {{if not $collapse -}}
             {{if and $fixedStatusCode $isRef -}}
                 type {{$opid}}{{$statusCode}}Response {{if not $isExternalRef}}={{end}} {{$ref}}Response
             {{else -}}
@@ -154,7 +158,8 @@
                     {{end -}}
                 }
             {{end -}}
-            func (response {{$opid}}{{$statusCode}}Response) Visit{{$opid}}Response(ctx iris.Context) error {
+            {{end -}}
+            func (response {{if $collapse}}{{$ref}}Response{{else}}{{$opid}}{{$statusCode}}Response{{end}}) Visit{{$opid}}Response(ctx iris.Context) error {
                 {{range $headers -}}
                     ctx.ResponseWriter().Header().Set("{{.Name}}", fmt.Sprint(response.Headers.{{.GoName}}))
                 {{end -}}

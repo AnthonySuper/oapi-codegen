@@ -383,4 +383,11 @@ var TemplateFunctions = template.FuncMap{
 
 	"genServerURLWithVariablesFunctionParams": genServerURLWithVariablesFunctionParams,
 	"httpMethodConstant":                      httpMethodConstant,
+
+	// collapseComponentResponses returns true when the CollapseComponentResponses
+	// output option is enabled. Used by strict server templates to skip
+	// per-operation wrapper types for $ref component responses.
+	"collapseComponentResponses": func() bool {
+		return globalState.options.OutputOptions.CollapseComponentResponses
+	},
 }

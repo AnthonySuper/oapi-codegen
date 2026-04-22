@@ -522,12 +522,30 @@ type RequestBodyEncoding struct {
 	Explode     *bool
 }
 
+// CollapseVisitorOp represents one operation+statusCode that references a
+// component response via $ref, for use when CollapseComponentResponses is
+// enabled. The Visit method for this operation will be attached directly to
+// the shared component response type rather than a per-operation wrapper.
+type CollapseVisitorOp struct {
+	OperationId string
+	StatusCode  string
+}
+
+// HasFixedStatusCode returns true if the status code is a fixed numeric value.
+func (c CollapseVisitorOp) HasFixedStatusCode() bool {
+	_, err := strconv.Atoi(c.StatusCode)
+	return err == nil
+}
+
 type ResponseDefinition struct {
 	StatusCode  string
 	Description string
 	Contents    []ResponseContentDefinition
 	Headers     []ResponseHeaderDefinition
 	Ref         string
+	// CollapseVisitors is populated when CollapseComponentResponses is enabled.
+	// Each entry is an operation that references this component response via $ref.
+	CollapseVisitors []CollapseVisitorOp
 }
 
 func (r ResponseDefinition) HasFixedStatusCode() bool {

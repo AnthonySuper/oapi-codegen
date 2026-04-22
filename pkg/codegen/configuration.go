@@ -388,6 +388,15 @@ type OutputOptions struct {
 	// via x-go-name.
 	ResolveTypeNameCollisions bool `yaml:"resolve-type-name-collisions,omitempty"`
 
+	// CollapseComponentResponses, when enabled, skips generating per-operation
+	// wrapper types (e.g. GetWidgetByID404JSONResponse) for responses that are
+	// $ref to a components/responses entry. Instead, Visit methods are attached
+	// directly to the shared component type (e.g. NotFoundJSONResponse).
+	// This lets handlers return the shared type directly without wrapping it.
+	// Only applies to fixed-status-code, non-external $ref responses.
+	// Default false preserves existing behavior.
+	CollapseComponentResponses bool `yaml:"collapse-component-responses,omitempty"`
+
 	// TypeMapping allows customizing OpenAPI type/format to Go type mappings.
 	// User-specified mappings are merged on top of the defaults.
 	TypeMapping *TypeMapping `yaml:"type-mapping,omitempty"`
